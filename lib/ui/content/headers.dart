@@ -122,28 +122,30 @@ class _HeadersWidgetState extends State<HeadersWidget> {
       children: !isTextMode ? _buildHeaderRows(widget.message) : buildTextMode(widget.message),
     );
   }
-
-  List<Widget> buildTextMode(HttpMessage? message) {
-    final text = _buildRawHeaders(message);
-    if (_controller.text != text) {
-      _controller = CodeController(readOnly: true, language: http, text: text);
-    }
-
-    return [
-      CodeTheme(
-        data: CodeThemeData(
-            styles: Theme.brightnessOf(context) == Brightness.light ? atomOneLightTheme : atomOneDarkTheme),
-        child: CodeField(
-          background: Colors.transparent,
-          readOnly: Platforms.isMobile(),
-          wrap: true,
-          gutterStyle: const GutterStyle(margin: 0, width: 52, showErrors: false),
-          textStyle: const TextStyle(fontSize: 15.3),
-          controller: _controller,
-        ),
-      ),
-    ];
+List<Widget> buildTextMode(HttpMessage? message) {
+  final text = _buildRawHeaders(message);
+  if (_controller.text != text) {
+    _controller = CodeController(readOnly: true, language: http, text: text);
   }
+
+  return [
+    CodeTheme(
+      data: CodeThemeData(
+        styles: Theme.of(context).brightness == Brightness.light 
+            ? atomOneLightTheme 
+            : atomOneDarkTheme,
+      ),
+      child: CodeField(
+        background: Colors.transparent,
+        readOnly: Platforms.isMobile(),
+        wrap: true,
+        gutterStyle: const GutterStyle(margin: 0, width: 52, showErrors: false),
+        textStyle: const TextStyle(fontSize: 15.3),
+        controller: _controller,
+      ),
+    ),
+  ];
+}
 
   List<Widget> _buildHeaderRows(HttpMessage? message) {
     final rows = <Widget>[];
