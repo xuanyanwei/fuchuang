@@ -1,0 +1,82 @@
+# 工作流名称
+name: Flutter Build Android APK
+# 触发条件：main分支push代码 / 手动触发（Actions页面点击运行）
+on:
+  workflow_dispatch: # 仅保留手动触发开关
+
+# 工作流任务
+jobs:
+  build:
+    # 运行环境：Ubuntu最新版（GitHub Actions官方推荐，构建速度快）
+    runs-on: ubuntu-latest
+    # 任务步骤
+    steps:
+      # 步骤1：拉取项目代码到运行环境
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 步骤2：配置Flutter环境（自动安装指定稳定版，配置环境变量）
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: '3.27.0' # 👈 关键：指定兼容安卓6的版本
+          channel: stable
+          cache: true # 开启缓存，加速后续构建
+
+      # 步骤3：安装Flutter项目依赖
+      - name: Install Dependencies
+        run: flutter pub get
+
+      # 步骤4：生成签名密钥配置文件（key.properties）
+      - name: Create key.properties
+        run: |
+          echo "storeFile=${{ github.workspace }}/proxypin-key.jks" > android/key.properties
+          echo "keyAlias=${{ secrets.KEY_ALIAS }}" >> android/key.properties
+          echo "keyPassword=${{ secrets.KEY_PASSWORD }}" >> android/key.properties
+          echo "storePassword=${{ secrets.STORE_PASSWORD }}" >> android/key.properties
+
+      # 步骤5：从Secrets中还原签名密钥文件（proxypin-key.jks）
+      - name: Restore Keystore File
+        run: |
+          echo "${{ secrets.KEYSTORE_BASE64 }}" | base64 -d > proxypin-key.jks
+
+      # 步骤6：检查Flutter环境（可选，用于日志排查）
+      - name: Flutter Doctor
+        run: flutter doctor -v
+
+      # 步骤7：清理旧构建缓存（避免编译冲突）
+      - name: Clean Project
+        run: flutter clean
+
+      # 步骤8：构建Release版APK（仅arm64-v8a架构，核心修改处）
+      - name: Build Release APK (only arm64-v8a)
+        run: flutter build apk --release --tree-shake-icons --target-platform android-arm64
+      # 步骤9：重命名APK（添加版本/时间戳，便于区分产物）
+      - name: Rename APK
+        run: |
+          # 获取项目版本号（从pubspec.yaml读取）
+          VERSION=$(grep 'version:' pubspec.yaml | awk '{print $2}' | sed 's/\+/-/g')
+          # 拼接新文件名：proxypin-版本-时间戳.apk
+          NEW_APK_NAME="proxypin-${VERSION}-$(date +%Y%m%d%H%M%S).apk"
+          # 重命名并移动到根目录（便于后续上传）
+          cp build/app/outputs/flutter-apk/app-release.apk ./${NEW_APK_NAME}
+          # 输出文件名到环境变量，供后续步骤使用
+          echo "APK_NAME=${NEW_APK_NAME}" >> $GITHUB_ENV
+
+      # 步骤10：上传APK作为构建产物（可在Actions页面下载）
+      - name: Upload APK Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ${{ env.APK_NAME }} # 产物名称（与重命名后的APK一致）
+          path: ./${{ env.APK_NAME }} # APK文件路径
+          retention-days: 1 # 产物保留30天，可根据需要调整
+
+      # 步骤11：（可选）创建GitHub Release并上传APK
+      - name: Create Release and Upload APK
+        if: startsWith(github.ref, 'refs/tags/') # 仅tag推送时触发
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ./${{ env.APK_NAME }} # 要上传的APK文件
+          tag_name: ${{ github.ref_name }} # Release标签名（与git tag一致）
+          name: Release ${{ github.ref_name }} # Release名称
+          generate_release_notes: true # 自动生成更新日志
