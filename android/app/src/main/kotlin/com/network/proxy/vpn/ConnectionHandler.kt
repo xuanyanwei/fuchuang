@@ -1,5 +1,6 @@
 package com.network.proxy.vpn
 
+import android.os.Build
 import android.util.Log
 import com.network.proxy.vpn.Connection.Companion.getConnectionKey
 import com.network.proxy.vpn.socket.ClientPacketWriter
@@ -384,7 +385,7 @@ class ConnectionHandler(
             connection.isConnected = connected
             nioService.registerSession(connection)
 
-            if (proxyAddress == manager.proxyAddress) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N && proxyAddress == manager.proxyAddress) {
                 //获取进程信息
                 ProcessInfoManager.instance.setConnectionOwnerUid(connection)
                 Log.d(
@@ -626,7 +627,7 @@ class ConnectionHandler(
             private fun isReachable(ipAddress: String): Boolean {
                 return try {
                     InetAddress.getByName(ipAddress).isReachable(10000)
-                } catch (_: IOException) {
+                } catch (e: IOException) {
                     false
                 }
             }
