@@ -40,39 +40,42 @@ class _WindowsToolbarState extends State<WindowsToolbar> with WindowListener {
             ))),
         widget.title ?? SizedBox(),
         Expanded(child: DragToMoveArea(child: Container())),
-        WindowCaptionButton.minimize(
-            brightness: Theme.brightnessOf(context),
-            onPressed: () async {
-              bool isMinimized = await windowManager.isMinimized();
-              if (isMinimized) {
-                windowManager.restore();
-              } else {
-                windowManager.minimize();
-              }
-            }),
+        WindowCaptionButton.minimize(  // 这里原来是第54行附近
+          brightness: Theme.of(context).brightness,
+          onPressed: () async {
+            bool isMinimized = await windowManager.isMinimized();
+            if (isMinimized) {
+              windowManager.restore();
+            } else {
+              windowManager.minimize();
+            }
+          },
+        ),  // 添加这个逗号
         FutureBuilder<bool>(
-            future: windowManager.isMaximized(),
-            builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
-              if (snapshot.data == true) {
-                return WindowCaptionButton.unmaximize(
-                  brightness: Theme.brightnessOf(context),
-                  onPressed: () {
-                    windowManager.unmaximize();
-                  },
-                );
-              }
-              return WindowCaptionButton.maximize(
-                brightness: Theme.brightnessOf(context),
+          future: windowManager.isMaximized(),
+          builder: (BuildContext context, AsyncSnapshot<bool> snapshot) {
+            if (snapshot.data == true) {
+              return WindowCaptionButton.unmaximize(
+                brightness: Theme.of(context).brightness,
                 onPressed: () {
-                  windowManager.maximize();
+                  windowManager.unmaximize();
                 },
               );
-            }),
+            }
+            return WindowCaptionButton.maximize(
+              brightness: Theme.of(context).brightness,
+              onPressed: () {
+                windowManager.maximize();
+              },
+            );
+          },
+        ),  // 添加这个逗号
         WindowCaptionButton.close(
-            brightness: Theme.brightnessOf(context),
-            onPressed: () {
-              windowManager.close();
-            }),
+          brightness: Theme.of(context).brightness,
+          onPressed: () {
+            windowManager.close();
+          },
+        ),
       ],
     );
   }
