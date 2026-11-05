@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script>
+      // Gracefully neutralize harmless sandbox Vite HMR WebSocket connection errors
+      (function() {
+        window.addEventListener('error', function(e) {
+          if (e && (String(e.message || '').includes('WebSocket') || String(e.filename || '').includes('@vite/client'))) {
+            e.stopImmediatePropagation();
+            e.preventDefault();
+            return true;
+          }
+        }, true);
+
+        window.addEventListener('unhandledrejection', function(e) {
+          if (e && e.reason && String(e.reason).includes('WebSocket')) {
+            e.stopImmediatePropagation();
+            e.preventDefault();
+          }
+        }, true);
+
+        var NativeWS = window.WebSocket;
+        if (!NativeWS) return;
+
+        function MockWS(url, proto) {
+          var listeners = {};
+          this.url = url;
+          this.protocol = Array.isArray(proto) ? proto[0] : (proto || 'vite-hmr');
+          this.readyState = 1; // OPEN
+          this.bufferedAmount = 0;
+          this.extensions = '';
+          this.binaryType = 'blob';
+
+          this.addEventListener = function(t, fn) {
+            listeners[t] = listeners[t] || [];
+            listeners[t].push(fn);
+          };
+          this.removeEventListener = function(t, fn) {
+            if (!listeners[t]) return;
+            listeners[t] = listeners[t].filter(function(l) { return l !== fn; });
+          };
+          this.dispatchEvent = function(evt) {
+            var list = listeners[evt.type] || [];
+            for (var i = 0; i < list.length; i++) {
+              try { list[i].call(this, evt); } catch(_) {}
+            }
+            return true;
+          };
+          this.send = function() {};
+          this.close = function() { this.readyState = 3; };
+
+          var self = this;
+          setTimeout(function() {
+            var evt = { type: 'open', target: self };
+            if (typeof self.onopen === 'function') {
+              try { self.onopen(evt); } catch(_) {}
+            }
+            self.dispatchEvent(evt);
+          }, 10);
+        }
+
+        MockWS.prototype = NativeWS.prototype;
+        MockWS.CONNECTING = 0;
+        MockWS.OPEN = 1;
+        MockWS.CLOSING = 2;
+        MockWS.CLOSED = 3;
+
+        window.WebSocket = function(url, proto) {
+          var u = String(url || '');
+          var p = Array.isArray(proto) ? proto.join(',') : String(proto || '');
+          if (u.includes('vite') || p.includes('vite-hmr') || u.includes('@vite')) {
+            return new MockWS(url, proto);
+          }
+          return new NativeWS(url, proto);
+        };
+        window.WebSocket.prototype = NativeWS.prototype;
+        window.WebSocket.CONNECTING = 0;
+        window.WebSocket.OPEN = 1;
+        window.WebSocket.CLOSING = 2;
+        window.WebSocket.CLOSED = 3;
+      })();
+    </script>
+    <title>极光流媒体播放器 - M3U8智能解析与多集播放</title>
+    <meta name="description" content="专业流媒体与M3U8播放器，支持多集M3U播放列表智能解析、自动分集选集、自定义HTTP请求头与全屏沉浸播放。" />
+    <meta property="og:title" content="极光流媒体播放器 - M3U8智能解析与多集播放" />
+    <meta property="og:description" content="专业流媒体与M3U8播放器，支持多集M3U播放列表智能解析、自动分集选集、自定义HTTP请求头与全屏沉浸播放。" />
+    <meta property="og:type" content="website" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#0d0e12" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="极光播放器" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    <link rel="icon" type="image/svg+xml" href="/icon.svg" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <script type="module" crossorigin src="/assets/index-DBe88Tdz.js"></script>
+    <link rel="stylesheet" crossorigin href="/assets/index-AaeyA8nW.css">
+  <link rel="manifest" href="/manifest.webmanifest"><script id="vite-plugin-pwa:register-sw" src="/registerSW.js"></script></head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>
+
