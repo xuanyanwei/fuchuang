@@ -211,14 +211,14 @@ app.get('/api/proxy-stream', async (req: Request, res: Response) => {
 app.get('/aurora-player.apk', (_req: Request, res: Response) => {
   const apkPath = path.join(staticDir, 'aurora-player.apk');
   res.setHeader('Content-Type', 'application/vnd.android.package-archive');
-  res.setHeader('Content-Disposition', 'attachment; filename="极光播放器.apk"');
+  res.setHeader('Content-Disposition', 'attachment; filename="aurora-player.apk"; filename*=UTF-8\'\'%E6%9E%81%E5%85%89%E6%92%AD%E6%94%BE%E5%99%A8.apk');
   res.sendFile(apkPath);
 });
 
 app.get('/download-apk', (_req: Request, res: Response) => {
   const apkPath = path.join(staticDir, 'aurora-player.apk');
   res.setHeader('Content-Type', 'application/vnd.android.package-archive');
-  res.setHeader('Content-Disposition', 'attachment; filename="极光播放器.apk"');
+  res.setHeader('Content-Disposition', 'attachment; filename="aurora-player.apk"; filename*=UTF-8\'\'%E6%9E%81%E5%85%89%E6%92%AD%E6%94%BE%E5%99%A8.apk');
   res.sendFile(apkPath);
 });
 

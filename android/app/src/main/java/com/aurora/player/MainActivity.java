@@ -2,7 +2,6 @@ package com.aurora.player;
 
 import android.annotation.SuppressLint;
 import android.app.Activity;
-import android.app.PictureInPictureParams;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.net.Uri;
@@ -10,7 +9,6 @@ import android.net.http.SslError;
 import android.os.Build;
 import android.os.Bundle;
 import android.util.Log;
-import android.util.Rational;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -30,6 +28,8 @@ import java.io.BufferedReader;
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.util.HashMap;
@@ -48,17 +48,31 @@ public class MainActivity extends Activity {
             runOnUiThread(new Runnable() {
                 @Override
                 public void run() {
-                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    if (Build.VERSION.SDK_INT >= 26) {
                         try {
-                            PictureInPictureParams.Builder builder = new PictureInPictureParams.Builder();
-                            builder.setAspectRatio(new Rational(16, 9));
-                            enterPictureInPictureMode(builder.build());
-                        } catch (Exception e) {
-                            try {
-                                enterPictureInPictureMode();
-                            } catch (Exception ex) {
-                                Log.e("AuroraPlayer", "PiP invocation error", ex);
-                            }
+                            Class<?> rationalClass = Class.forName("android.util.Rational");
+                            Constructor<?> rationalCons = rationalClass.getConstructor(int.class, int.class);
+                            Object rationalObj = rationalCons.newInstance(16, 9);
+
+                            Class<?> builderClass = Class.forName("android.app.PictureInPictureParams$Builder");
+                            Object builderObj = builderClass.newInstance();
+                            Method setAspectMethod = builderClass.getMethod("setAspectRatio", rationalClass);
+                            setAspectMethod.invoke(builderObj, rationalObj);
+                            Method buildMethod = builderClass.getMethod("build");
+                            Object paramsObj = buildMethod.invoke(builderObj);
+
+                            Class<?> paramsClass = Class.forName("android.app.PictureInPictureParams");
+                            Method enterPipMethod = Activity.class.getMethod("enterPictureInPictureMode", paramsClass);
+                            enterPipMethod.invoke(MainActivity.this, paramsObj);
+                            return;
+                        } catch (Exception ignored) {}
+                    }
+                    if (Build.VERSION.SDK_INT >= 24) {
+                        try {
+                            Method enterPipMethod = Activity.class.getMethod("enterPictureInPictureMode");
+                            enterPipMethod.invoke(MainActivity.this);
+                        } catch (Exception ex) {
+                            Log.e("AuroraPlayer", "PiP reflection error", ex);
                         }
                     }
                 }
@@ -316,17 +330,6 @@ public class MainActivity extends Activity {
         setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED);
         if (webView != null) {
             webView.setVisibility(View.VISIBLE);
-        }
-    }
-
-    @Override
-    public void onPictureInPictureModeChanged(boolean isInPictureInPictureMode, Configuration newConfig) {
-        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig);
-        if (webView != null) {
-            String script = isInPictureInPictureMode
-                    ? "document.body.classList.add('pip-mode');"
-                    : "document.body.classList.remove('pip-mode');";
-            webView.evaluateJavascript(script, null);
         }
     }
 
