@@ -207,6 +207,21 @@ app.get('/api/proxy-stream', async (req: Request, res: Response) => {
   }
 });
 
+// Explicit APK download routes
+app.get('/aurora-player.apk', (_req: Request, res: Response) => {
+  const apkPath = path.join(staticDir, 'aurora-player.apk');
+  res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+  res.setHeader('Content-Disposition', 'attachment; filename="极光播放器.apk"');
+  res.sendFile(apkPath);
+});
+
+app.get('/download-apk', (_req: Request, res: Response) => {
+  const apkPath = path.join(staticDir, 'aurora-player.apk');
+  res.setHeader('Content-Type', 'application/vnd.android.package-archive');
+  res.setHeader('Content-Disposition', 'attachment; filename="极光播放器.apk"');
+  res.sendFile(apkPath);
+});
+
 // Serve static frontend assets from /dist
 app.use(express.static(staticDir));
 
