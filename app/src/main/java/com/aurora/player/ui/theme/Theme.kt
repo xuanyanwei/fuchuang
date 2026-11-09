@@ -10,16 +10,14 @@ import androidx.compose.ui.platform.LocalView
 import androidx.core.view.WindowCompat
 
 private val AuroraDarkColorScheme = darkColorScheme(
-    primary = AuroraCyan,
-    onPrimary = AuroraDarkBackground,
+    primary = AuroraOrange,
+    onPrimary = AuroraBlack,
     primaryContainer = AuroraDarkSurfaceVariant,
-    onPrimaryContainer = AuroraCyan,
-    secondary = AuroraNeonBlue,
-    onSecondary = AuroraDarkBackground,
+    onPrimaryContainer = AuroraOrange,
+    secondary = AuroraOrangeGlow,
+    onSecondary = AuroraBlack,
     secondaryContainer = AuroraDarkSurfaceVariant,
-    onSecondaryContainer = AuroraNeonBlue,
-    tertiary = AuroraPurple,
-    onTertiary = AuroraDarkBackground,
+    onSecondaryContainer = AuroraOrangeGlow,
     background = AuroraDarkBackground,
     onBackground = AuroraTextPrimary,
     surface = AuroraDarkSurface,

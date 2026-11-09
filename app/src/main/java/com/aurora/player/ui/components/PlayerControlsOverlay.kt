@@ -20,26 +20,17 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.FastForward
-import androidx.compose.material.icons.filled.FastRewind
-import androidx.compose.material.icons.filled.FitScreen
 import androidx.compose.material.icons.filled.Fullscreen
 import androidx.compose.material.icons.filled.FullscreenExit
-import androidx.compose.material.icons.filled.Lock
-import androidx.compose.material.icons.filled.LockOpen
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PictureInPictureAlt
 import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material.icons.filled.SkipNext
 import androidx.compose.material.icons.filled.SkipPrevious
-import androidx.compose.material.icons.filled.Speed
-import androidx.compose.material.icons.filled.ViewList
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material.icons.automirrored.filled.VolumeMute
+import androidx.compose.material.icons.automirrored.filled.VolumeUp
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Slider
@@ -62,15 +53,10 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.aurora.player.data.model.PlaylistItem
-import com.aurora.player.player.AspectRatioMode
 import com.aurora.player.player.AuroraPlayerController
 import com.aurora.player.player.PlayerState
-import com.aurora.player.ui.theme.AuroraCyan
-import com.aurora.player.ui.theme.AuroraDarkBackground
-import com.aurora.player.ui.theme.AuroraDarkSurface
-import com.aurora.player.ui.theme.AuroraError
-import com.aurora.player.ui.theme.AuroraNeonBlue
+import com.aurora.player.ui.theme.AuroraBlack
+import com.aurora.player.ui.theme.AuroraOrange
 import com.aurora.player.ui.theme.AuroraTextPrimary
 import com.aurora.player.ui.theme.AuroraTextSecondary
 import kotlinx.coroutines.delay
@@ -81,448 +67,307 @@ fun PlayerControlsOverlay(
     playerState: PlayerState,
     isVisible: Boolean,
     isFullscreen: Boolean,
-    playlist: List<PlaylistItem>,
     onToggleFullscreen: () -> Unit,
     onEnterPip: () -> Unit,
-    onOpenEpisodesSheet: () -> Unit,
-    onBack: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onPrevious: () -> Unit,
+    onNext: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var showSpeedMenu by remember { mutableStateOf(false) }
-    var showAspectMenu by remember { mutableStateOf(false) }
     var isSeeking by remember { mutableStateOf(false) }
     var seekPosition by remember { mutableFloatStateOf(0f) }
 
-    // Auto hide after 5 seconds if playing
+    // Auto hide after 4.5 seconds if playing
     LaunchedEffect(isVisible, playerState.isPlaying, isSeeking) {
-        if (isVisible && playerState.isPlaying && !isSeeking && !playerState.isControlsLocked) {
+        if (isVisible && playerState.isPlaying && !isSeeking) {
             delay(4500)
-            // Can trigger hide through parent if needed
         }
     }
 
-    AnimatedVisibility(
-        visible = isVisible,
-        enter = fadeIn(),
-        exit = fadeOut(),
-        modifier = modifier.fillMaxSize()
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.45f))
-        ) {
-            // Locked mode overlay
-            if (playerState.isControlsLocked) {
-                IconButton(
-                    onClick = { controller.toggleControlsLock() },
-                    modifier = Modifier
-                        .align(Alignment.CenterStart)
-                        .padding(start = 24.dp)
-                        .background(AuroraDarkSurface.copy(alpha = 0.85f), CircleShape)
-                        .testTag("unlock_controls_button")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.Lock,
-                        contentDescription = "解锁控制面板",
-                        tint = AuroraCyan
-                    )
-                }
-                return@Box
-            }
-
-            // Top gradient & bar
+    Box(modifier = modifier.fillMaxSize()) {
+        // Center overlay message when waiting or buffering
+        if (playerState.currentItem == null || playerState.isBuffering || !playerState.isPlaying && playerState.currentPosition == 0L) {
             Box(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.TopCenter)
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(Color.Black.copy(alpha = 0.85f), Color.Transparent)
-                        )
-                    )
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                    .align(Alignment.Center)
+                    .background(Color(0xFF14161F).copy(alpha = 0.85f), RoundedCornerShape(16.dp))
+                    .padding(horizontal = 24.dp, vertical = 20.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceBetween
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.Center
                 ) {
+                    CircularProgressIndicator(
+                        color = AuroraOrange,
+                        strokeWidth = 3.dp,
+                        modifier = Modifier.size(36.dp)
+                    )
+                    Spacer(modifier = Modifier.height(14.dp))
+                    Text(
+                        text = if (playerState.currentItem == null) {
+                            "请在下方输入流媒体链接并点击播放"
+                        } else if (playerState.isBuffering) {
+                            "正在缓冲流媒体..."
+                        } else {
+                            "点击播放继续观看"
+                        },
+                        color = AuroraTextPrimary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        }
+
+        // Visible controls overlay
+        AnimatedVisibility(
+            visible = isVisible,
+            enter = fadeIn(),
+            exit = fadeOut(),
+            modifier = Modifier.fillMaxSize()
+        ) {
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .background(Color.Black.copy(alpha = 0.35f))
+            ) {
+                // Top Bar
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.TopCenter)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Black.copy(alpha = 0.75f), Color.Transparent)
+                            )
+                        )
+                        .padding(horizontal = 14.dp, vertical = 10.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Tag "极光" + Title
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier.weight(1f)
                     ) {
-                        IconButton(
-                            onClick = onBack,
-                            modifier = Modifier.testTag("player_back_button")
+                        Surface(
+                            shape = RoundedCornerShape(4.dp),
+                            color = AuroraOrange,
+                            modifier = Modifier.padding(end = 8.dp)
                         ) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "返回",
-                                tint = AuroraTextPrimary
-                            )
-                        }
-
-                        Column(modifier = Modifier.padding(start = 4.dp)) {
                             Text(
-                                text = playerState.currentItem?.title ?: "极光流媒体播放",
-                                color = AuroraTextPrimary,
-                                fontSize = 15.sp,
+                                text = "极光",
+                                color = AuroraBlack,
+                                fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Row(verticalAlignment = Alignment.CenterVertically) {
-                                if (playerState.isLive) {
-                                    Surface(
-                                        color = AuroraError,
-                                        shape = RoundedCornerShape(4.dp),
-                                        modifier = Modifier.padding(end = 6.dp)
-                                    ) {
-                                        Text(
-                                            text = "LIVE 直播",
-                                            color = Color.White,
-                                            fontSize = 9.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            modifier = Modifier.padding(horizontal = 4.dp, vertical = 2.dp)
-                                        )
-                                    }
-                                }
-                                Text(
-                                    text = "${playerState.currentItem?.groupTitle ?: "默认"} • ${playerState.resolutionText}",
-                                    color = AuroraTextSecondary,
-                                    fontSize = 11.sp
-                                )
-                            }
-                        }
-                    }
-
-                    // Top Action buttons
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        // Lock Controls button
-                        IconButton(
-                            onClick = { controller.toggleControlsLock() },
-                            modifier = Modifier.testTag("lock_controls_button")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.LockOpen,
-                                contentDescription = "锁定屏幕",
-                                tint = AuroraTextSecondary
+                                modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
                             )
                         }
-
-                        // Aspect Ratio button
-                        Box {
-                            IconButton(
-                                onClick = { showAspectMenu = true },
-                                modifier = Modifier.testTag("aspect_ratio_button")
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.FitScreen,
-                                    contentDescription = "画面比例",
-                                    tint = AuroraCyan
-                                )
-                            }
-                            DropdownMenu(
-                                expanded = showAspectMenu,
-                                onDismissRequest = { showAspectMenu = false }
-                            ) {
-                                AspectRatioMode.entries.forEach { mode ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(
-                                                text = mode.displayName,
-                                                color = if (playerState.aspectRatioMode == mode) AuroraCyan else AuroraTextPrimary
-                                            )
-                                        },
-                                        onClick = {
-                                            controller.setAspectRatioMode(mode)
-                                            showAspectMenu = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-
-                        // Speed selector button
-                        Box {
-                            IconButton(
-                                onClick = { showSpeedMenu = true },
-                                modifier = Modifier.testTag("playback_speed_button")
-                            ) {
-                                Text(
-                                    text = "${playerState.playbackSpeed}x",
-                                    color = AuroraCyan,
-                                    fontSize = 12.sp,
-                                    fontWeight = FontWeight.Bold
-                                )
-                            }
-                            DropdownMenu(
-                                expanded = showSpeedMenu,
-                                onDismissRequest = { showSpeedMenu = false }
-                            ) {
-                                listOf(0.5f, 0.75f, 1.0f, 1.25f, 1.5f, 2.0f).forEach { speed ->
-                                    DropdownMenuItem(
-                                        text = {
-                                            Text(
-                                                text = "${speed}x",
-                                                color = if (playerState.playbackSpeed == speed) AuroraCyan else AuroraTextPrimary
-                                            )
-                                        },
-                                        onClick = {
-                                            controller.setPlaybackSpeed(speed)
-                                            showSpeedMenu = false
-                                        }
-                                    )
-                                }
-                            }
-                        }
-
-                        // Episodes selector
-                        IconButton(
-                            onClick = onOpenEpisodesSheet,
-                            modifier = Modifier.testTag("episodes_button")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.ViewList,
-                                contentDescription = "分集选集",
-                                tint = AuroraTextPrimary
-                            )
-                        }
-
-                        // PiP button
-                        IconButton(
-                            onClick = onEnterPip,
-                            modifier = Modifier.testTag("pip_button")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.PictureInPictureAlt,
-                                contentDescription = "画中画",
-                                tint = AuroraTextPrimary
-                            )
-                        }
-                    }
-                }
-            }
-
-            // Center playback controls
-            Row(
-                modifier = Modifier
-                    .align(Alignment.Center)
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Previous Episode
-                IconButton(
-                    onClick = { controller.playPreviousEpisode(playlist) },
-                    modifier = Modifier.testTag("prev_episode_button")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.SkipPrevious,
-                        contentDescription = "上一集",
-                        tint = AuroraTextPrimary,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                // Rewind 10s
-                IconButton(
-                    onClick = { controller.seekBackward(10000) },
-                    modifier = Modifier.testTag("rewind_10s_button")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.FastRewind,
-                        contentDescription = "快退10秒",
-                        tint = AuroraTextPrimary,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                // Play / Pause central button
-                Surface(
-                    shape = CircleShape,
-                    color = AuroraCyan,
-                    modifier = Modifier
-                        .size(64.dp)
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = { controller.togglePlayPause() }
-                        )
-                        .testTag("play_pause_button"),
-                    shadowElevation = 8.dp
-                ) {
-                    Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            imageVector = if (playerState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
-                            contentDescription = if (playerState.isPlaying) "暂停" else "播放",
-                            tint = AuroraDarkBackground,
-                            modifier = Modifier.size(36.dp)
-                        )
-                    }
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                // Forward 10s
-                IconButton(
-                    onClick = { controller.seekForward(10000) },
-                    modifier = Modifier.testTag("forward_10s_button")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.FastForward,
-                        contentDescription = "快进10秒",
-                        tint = AuroraTextPrimary,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-
-                Spacer(modifier = Modifier.width(16.dp))
-
-                // Next Episode
-                IconButton(
-                    onClick = { controller.playNextEpisode(playlist) },
-                    modifier = Modifier.testTag("next_episode_button")
-                ) {
-                    Icon(
-                        imageVector = Icons.Default.SkipNext,
-                        contentDescription = "下一集",
-                        tint = AuroraTextPrimary,
-                        modifier = Modifier.size(32.dp)
-                    )
-                }
-            }
-
-            // Bottom gradient & seek bar
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .align(Alignment.BottomCenter)
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f))
-                        )
-                    )
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
-            ) {
-                Column {
-                    // Time and Progress
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        val currentSec = if (isSeeking) (seekPosition / 1000).toLong() else (playerState.currentPosition / 1000)
-                        val totalSec = (playerState.duration / 1000).coerceAtLeast(0)
 
                         Text(
-                            text = formatTime(currentSec),
+                            text = playerState.currentItem?.title?.ifBlank { "等待播放源" } ?: "等待播放源",
                             color = AuroraTextPrimary,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium
+                            fontSize = 14.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
                         )
+                    }
 
-                        // Seek bar (only for non-live streams)
-                        if (!playerState.isLive && playerState.duration > 0) {
+                    // Three dots menu button (opens settings)
+                    Surface(
+                        shape = RoundedCornerShape(8.dp),
+                        color = Color.Black.copy(alpha = 0.5f),
+                        modifier = Modifier
+                            .clickable(
+                                interactionSource = remember { MutableInteractionSource() },
+                                indication = null,
+                                onClick = onOpenSettings
+                            )
+                            .testTag("three_dots_settings_button")
+                    ) {
+                        Box(
+                            modifier = Modifier.size(36.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "播放器设置",
+                                tint = AuroraTextPrimary,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
+
+                // Bottom Controls Bar (Seekbar + Buttons Row)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .align(Alignment.BottomCenter)
+                        .background(
+                            Brush.verticalGradient(
+                                colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f))
+                            )
+                        )
+                        .padding(horizontal = 14.dp, vertical = 8.dp)
+                ) {
+                    // Top: Seekbar
+                    val currentPos = if (isSeeking) seekPosition else playerState.currentPosition.toFloat()
+                    val totalDuration = playerState.duration.toFloat().coerceAtLeast(1f)
+
+                    Slider(
+                        value = currentPos.coerceIn(0f, totalDuration),
+                        onValueChange = {
+                            isSeeking = true
+                            seekPosition = it
+                        },
+                        onValueChangeFinished = {
+                            controller.seekTo(seekPosition.toLong())
+                            isSeeking = false
+                        },
+                        valueRange = 0f..totalDuration,
+                        colors = SliderDefaults.colors(
+                            thumbColor = Color.White,
+                            activeTrackColor = Color.White,
+                            inactiveTrackColor = Color.White.copy(alpha = 0.25f)
+                        ),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(20.dp)
+                            .testTag("player_seekbar")
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+
+                    // Bottom Row: Play, Prev, Next, Time, Volume, Pip, Fullscreen
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        // Left controls
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            // Play / Pause
+                            IconButton(
+                                onClick = { controller.togglePlayPause() },
+                                modifier = Modifier.size(36.dp).testTag("play_pause_button")
+                            ) {
+                                Icon(
+                                    imageVector = if (playerState.isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                    contentDescription = if (playerState.isPlaying) "暂停" else "播放",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(4.dp))
+
+                            // Previous
+                            IconButton(
+                                onClick = onPrevious,
+                                modifier = Modifier.size(36.dp).testTag("prev_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.SkipPrevious,
+                                    contentDescription = "上一集",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(4.dp))
+
+                            // Next
+                            IconButton(
+                                onClick = onNext,
+                                modifier = Modifier.size(36.dp).testTag("next_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.SkipNext,
+                                    contentDescription = "下一集",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+
+                            Spacer(modifier = Modifier.width(10.dp))
+
+                            // Time: 00:00 / 00:00
+                            val currentSec = (if (isSeeking) (seekPosition / 1000).toLong() else (playerState.currentPosition / 1000)).coerceAtLeast(0)
+                            val totalSec = (playerState.duration / 1000).coerceAtLeast(0)
+
+                            Text(
+                                text = "${formatSeconds(currentSec)} / ${if (playerState.isLive) "LIVE" else formatSeconds(totalSec)}",
+                                color = Color.White.copy(alpha = 0.9f),
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.Normal
+                            )
+                        }
+
+                        // Right controls: Volume, PiP, Fullscreen
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            // Volume Icon
+                            IconButton(
+                                onClick = { controller.toggleMute() },
+                                modifier = Modifier.size(34.dp).testTag("volume_toggle")
+                            ) {
+                                Icon(
+                                    imageVector = if (playerState.isMuted || playerState.volume == 0f) Icons.AutoMirrored.Filled.VolumeMute else Icons.AutoMirrored.Filled.VolumeUp,
+                                    contentDescription = "音量",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+
+                            // Volume Slider (orange active track and orange thumb as shown in screenshot)
                             Slider(
-                                value = if (isSeeking) seekPosition else playerState.currentPosition.toFloat(),
-                                onValueChange = {
-                                    isSeeking = true
-                                    seekPosition = it
+                                value = if (playerState.isMuted) 0f else playerState.volume,
+                                onValueChange = { newVol ->
+                                    controller.setVolume(newVol)
                                 },
-                                onValueChangeFinished = {
-                                    controller.seekTo(seekPosition.toLong())
-                                    isSeeking = false
-                                },
-                                valueRange = 0f..playerState.duration.toFloat().coerceAtLeast(1f),
+                                valueRange = 0f..1f,
                                 colors = SliderDefaults.colors(
-                                    thumbColor = AuroraCyan,
-                                    activeTrackColor = AuroraCyan,
+                                    thumbColor = AuroraOrange,
+                                    activeTrackColor = AuroraOrange,
                                     inactiveTrackColor = Color.White.copy(alpha = 0.25f)
                                 ),
                                 modifier = Modifier
-                                    .weight(1f)
-                                    .padding(horizontal = 8.dp)
-                                    .testTag("player_seek_slider")
+                                    .width(72.dp)
+                                    .height(20.dp)
+                                    .testTag("volume_slider")
                             )
-                        } else {
-                            Spacer(modifier = Modifier.weight(1f))
-                            Text(
-                                text = "实时广播",
-                                color = AuroraCyan,
-                                fontSize = 12.sp,
-                                modifier = Modifier.padding(horizontal = 8.dp)
-                            )
-                        }
 
-                        Text(
-                            text = if (playerState.isLive) "LIVE" else formatTime(totalSec),
-                            color = AuroraTextSecondary,
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Medium
-                        )
+                            Spacer(modifier = Modifier.width(8.dp))
 
-                        Spacer(modifier = Modifier.width(8.dp))
+                            // PiP button
+                            IconButton(
+                                onClick = onEnterPip,
+                                modifier = Modifier.size(34.dp).testTag("pip_button")
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.PictureInPictureAlt,
+                                    contentDescription = "画中画",
+                                    tint = Color.White,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
 
-                        // Fullscreen toggle
-                        IconButton(
-                            onClick = onToggleFullscreen,
-                            modifier = Modifier.size(36.dp).testTag("fullscreen_toggle_button")
-                        ) {
-                            Icon(
-                                imageVector = if (isFullscreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
-                                contentDescription = if (isFullscreen) "退出全屏" else "全屏播放",
-                                tint = AuroraCyan
-                            )
-                        }
-                    }
-                }
-            }
+                            Spacer(modifier = Modifier.width(4.dp))
 
-            // Error state banner
-            if (playerState.errorMessage != null) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.75f))
-                        .padding(24.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Text(
-                            text = "播放遇到问题",
-                            color = AuroraError,
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text(
-                            text = playerState.errorMessage,
-                            color = AuroraTextSecondary,
-                            fontSize = 13.sp
-                        )
-                        Spacer(modifier = Modifier.height(16.dp))
-                        Button(
-                            onClick = {
-                                playerState.currentItem?.let { controller.play(it) }
-                            },
-                            colors = ButtonDefaults.buttonColors(containerColor = AuroraCyan),
-                            modifier = Modifier.testTag("retry_play_button")
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.Refresh,
-                                contentDescription = null,
-                                tint = AuroraDarkBackground
-                            )
-                            Spacer(modifier = Modifier.width(6.dp))
-                            Text("重试连接", color = AuroraDarkBackground, fontWeight = FontWeight.Bold)
+                            // Fullscreen toggle button
+                            IconButton(
+                                onClick = onToggleFullscreen,
+                                modifier = Modifier.size(34.dp).testTag("fullscreen_button")
+                            ) {
+                                Icon(
+                                    imageVector = if (isFullscreen) Icons.Default.FullscreenExit else Icons.Default.Fullscreen,
+                                    contentDescription = if (isFullscreen) "退出全屏" else "全屏",
+                                    tint = AuroraOrange,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
                         }
                     }
                 }
@@ -531,7 +376,7 @@ fun PlayerControlsOverlay(
     }
 }
 
-private fun formatTime(seconds: Long): String {
+private fun formatSeconds(seconds: Long): String {
     val sec = seconds.coerceAtLeast(0)
     val h = sec / 3600
     val m = (sec % 3600) / 60
