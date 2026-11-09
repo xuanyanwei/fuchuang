@@ -1,8 +1,8 @@
 {
   "name": "极光流媒体播放器",
   "description": "专业流媒体与M3U8播放器，支持多集M3U播放列表智能解析、自动分集选集、自定义HTTP请求头、流媒体中继代理与全屏沉浸播放。",
-  "requestFramePermissions": [],
-  "majorCapabilities": [
+  "permissions": [],
+  "capabilities": [
     "MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"
   ]
 }
